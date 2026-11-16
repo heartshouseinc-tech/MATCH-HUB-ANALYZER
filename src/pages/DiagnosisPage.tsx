@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageTitle } from '../components/Layout'
+import { AI_ENABLED } from '../lib/ai/explainer'
 import { Card } from '../components/ui'
 import { ALL_PURPOSES, ALL_REGIONS, PURPOSE_LABELS, REGION_LABELS } from '../data/labels'
 import { DEFAULT_DIAGNOSIS, loadDiagnosis, saveDiagnosis, validateDiagnosis } from '../lib/diagnosisStore'
@@ -93,7 +94,10 @@ export function DiagnosisPage() {
 
       <div className="flex items-start gap-2 rounded-xl bg-sky-50 p-3 text-xs text-sky-800">
         <span aria-hidden>🔒</span>
-        <span>入力内容はこの端末のブラウザ内だけで処理・保存され、外部には送信されません。</span>
+        <span>
+          入力内容はこの端末のブラウザ内だけで処理・保存されます。
+          {AI_ENABLED && '結果画面でAI解説に同意した場合のみ、条件がAI（Google Gemini）へ送信されます。'}
+        </span>
       </div>
 
       {errors.length > 0 && (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { AiExplainPanel } from '../components/AiExplainPanel'
 import { CompareToggle } from '../components/AppCard'
 import { CriteriaBreakdown, RankingBars, ScoreRing, scoreColor, scoreLabel } from '../components/charts'
 import { PageTitle } from '../components/Layout'
@@ -9,7 +10,8 @@ import { useCompare } from '../context/CompareContext'
 import { PURPOSE_LABELS, REGION_LABELS } from '../data/labels'
 import { useAppData } from '../hooks/useAppData'
 import { loadDiagnosis } from '../lib/diagnosisStore'
-import { formatYen } from '../lib/format'
+import type { AiExplainResponse } from '../lib/ai/explainer'
+import { budgetLabel } from '../lib/ai/explainer'
 import { findActiveCampaign } from '../lib/outbound'
 import { activeEngine, BASE_WEIGHTS, CRITERION_LABELS, PRIORITY_MULTIPLIER, type CriterionKey, type DiagnosisInput, type Recommendation } from '../lib/scoring'
 import type { Campaign } from '../types/domain'
@@ -20,7 +22,7 @@ function ConditionSummary({ input }: { input: DiagnosisInput }) {
     REGION_LABELS[input.region],
     `相手 ${input.partnerAgeMin}〜${input.partnerAgeMax}歳`,
     PURPOSE_LABELS[input.purpose],
-    input.budget === 0 ? '無料のみ' : input.budget >= 100000 ? '予算上限なし' : `〜${formatYen(input.budget)}`,
+    input.budget >= 100000 ? '予算上限なし' : budgetLabel(input.budget),
     ...input.priorities.map((p) => `重視：${CRITERION_LABELS[p]}`),
   ]
   return (
@@ -34,7 +36,17 @@ function ConditionSummary({ input }: { input: DiagnosisInput }) {
   )
 }
 
-function ResultCard({ rec, campaigns, defaultOpen }: { rec: Recommendation; campaigns: Campaign[]; defaultOpen: boolean }) {
+function ResultCard({
+  rec,
+  campaigns,
+  defaultOpen,
+  aiComment,
+}: {
+  rec: Recommendation
+  campaigns: Campaign[]
+  defaultOpen: boolean
+  aiComment?: string
+}) {
   const [open, setOpen] = useState(defaultOpen)
   const { app, score, rank } = rec
   const promoted = findActiveCampaign(app.id, campaigns)?.showPrLabel
@@ -59,6 +71,13 @@ function ResultCard({ rec, campaigns, defaultOpen }: { rec: Recommendation; camp
         </div>
         <ScoreRing score={score} size={64} />
       </div>
+
+      {aiComment && (
+        <div className="mt-3 rounded-xl bg-violet-50 p-3 text-sm leading-relaxed text-slate-700">
+          <span className="mr-1 rounded bg-violet-600 px-1 py-0.5 text-[10px] font-bold text-white">AI</span>
+          {aiComment}
+        </div>
+      )}
 
       {rec.highlights.length > 0 && (
         <div className="mt-3">
@@ -115,6 +134,7 @@ export function DiagnosisResultPage() {
   const [input] = useState(() => loadDiagnosis())
   const [results, setResults] = useState<Recommendation[] | null>(null)
   const { replace } = useCompare()
+  const [ai, setAi] = useState<AiExplainResponse | null>(null)
 
   useEffect(() => {
     if (!input || loading || apps.length === 0) return
@@ -176,6 +196,8 @@ export function DiagnosisResultPage() {
         </section>
       )}
 
+      <AiExplainPanel input={input} results={results} onResult={setAi} />
+
       <Card>
         <SectionTitle sub="全アプリの適合スコア">スコアランキング</SectionTitle>
         <RankingBars items={results.map((r) => ({ id: r.app.id, label: r.app.name, score: r.score, color: r.app.logo.color }))} />
@@ -191,7 +213,13 @@ export function DiagnosisResultPage() {
 
       <div className="space-y-3">
         {results.map((r) => (
-          <ResultCard key={r.app.id} rec={r} campaigns={campaigns} defaultOpen={r.rank === 1} />
+          <ResultCard
+            key={r.app.id}
+            rec={r}
+            campaigns={campaigns}
+            defaultOpen={r.rank === 1}
+            aiComment={ai?.comments.find((c) => c.appId === r.app.id)?.comment}
+          />
         ))}
       </div>
 

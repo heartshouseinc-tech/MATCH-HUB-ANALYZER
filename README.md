@@ -82,6 +82,9 @@ SPA のルーティング用に `public/_redirects`（`/* /index.html 200`）を
 │   ├── components/             # UI 部品（カード、チャート、出典表示、送客ボタン等）
 │   ├── pages/                  # 画面（一覧・比較・診断・結果・詳細・データ方針）
 │   ├── App.tsx / main.tsx / index.css
+├── server/aiExplain.ts         # AI解説のサーバー処理（Gemini 呼び出し・入出力の検証）
+├── functions/api/ai-explain.ts # Cloudflare Pages Functions のエンドポイント
+├── .env.example                # 環境変数のサンプル
 └── vite.config.ts / tsconfig*.json
 ```
 
@@ -113,6 +116,41 @@ JSON ファイルや CMS / API から読み込む場合は、`AppRepository` を
 
 `src/data/campaigns.demo.ts` に案件を追加します（アプリ本体データとは別管理）。掲載期間内かつ `active: true` の案件があると、送客先が案件 URL に切り替わり、`showPrLabel: true` なら PR 表記が付きます。
 
+## AI解説（Google Gemini）
+
+診断結果画面に「AIによる解説」パネルを表示し、上位3アプリについて Gemini が解説文を生成します。
+
+- **スコア・順位はルールベースのまま。** AI は文章だけを作ります（同じ条件なら点数は毎回同じ）
+- **ユーザーが「同意してAI解説を見る」を押した時だけ**送信します。送るのは診断条件とスコア内訳のみで、氏名・連絡先は送りません
+- **APIキーはサーバー側だけ**に置きます（`VITE_` 接頭辞を付けないのでブラウザには出ません）
+- サーバー側で入力を検証して件数・文字数を制限し、AIの応答も「送ったアプリのコメントだけ」に絞ります
+- プロンプトで「データにない数値を作らない」「データ未取得は未確認と伝える」「誇大表現をしない」と指示しています
+
+### ローカルで試す
+
+```bash
+cp .env.example .env.local
+# .env.local に GEMINI_API_KEY=（あなたのキー）と VITE_AI_ENABLED=true を記入
+npm run dev
+```
+
+`npm run dev` では、本番と同じ処理（`server/aiExplain.ts`）を Vite 開発サーバーが `/api/ai-explain` として動かします。
+
+### Cloudflare Pages で有効にする
+
+Pages プロジェクトの **Settings → Variables and Secrets** に設定します。
+
+| 名前 | 種類 | 値 |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | シークレット | Gemini API キー |
+| `VITE_AI_ENABLED` | 変数 | `true`（ビルド時に必要） |
+| `GEMINI_MODEL` | 変数（任意） | 省略時 `gemini-2.5-flash` |
+| `ALLOWED_ORIGINS` | 変数（任意） | 例 `https://your-site.pages.dev`（他サイトからの呼び出しを拒否） |
+
+`functions/api/ai-explain.ts` が Pages Functions として自動でデプロイされます。
+
+**費用対策（推奨）**：Google Cloud 側で API の予算アラート・割り当て上限を設定し、Cloudflare の Rate Limiting ルールで `/api/ai-explain` に IP ごとの回数制限をかけてください（v0.1 のコードにはレート制限を入れていません）。
+
 ## 診断スコアの算出方法（ルールベース v1）
 
 | 評価軸 | 基本配点 | 判定内容 |
@@ -136,7 +174,8 @@ JSON ファイルや CMS / API から読み込む場合は、`AppRepository` を
 - 年代別・地域別実績の集計パイプライン（`PerformanceMetrics` 構造は準備済み）
 
 **AI 分析**
-- `ScoringEngine` を実装した AI エンジンを追加し、ルールベースと切り替え／併用
+- ✅ Gemini による推薦理由の解説（v0.1 で実装済み・スコアはルールベース）
+- AI 解説の結果キャッシュ（同じ条件の再生成を省いて費用削減）
 - 自由記述（「休日に一緒に出かけられる人がいい」など）からの条件抽出
 - AI の推薦理由も評価軸ごとに説明し、ルールベースとの差分を表示
 

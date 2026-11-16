@@ -4,6 +4,7 @@ import { NoData } from '../components/MetricValue'
 import { clearDiagnosis } from '../lib/diagnosisStore'
 import { readLocalClicks } from '../lib/tracking'
 import { useState } from 'react'
+import { AI_ENABLED } from '../lib/ai/explainer'
 
 export function AboutPage() {
   const [cleared, setCleared] = useState(false)
@@ -48,8 +49,14 @@ export function AboutPage() {
       <Card>
         <SectionTitle>プライバシー</SectionTitle>
         <p className="text-sm text-slate-600">
-          診断の入力内容や比較リストは、お使いのブラウザ内（localStorage）にのみ保存され、外部サーバーへは送信されません。
+          診断の入力内容や比較リストは、お使いのブラウザ内（localStorage）にのみ保存され、通常は外部サーバーへ送信されません。
         </p>
+        {AI_ENABLED && (
+          <p className="mt-2 text-sm text-slate-600">
+            例外として、診断結果画面で「同意してAI解説を見る」を押した場合に限り、診断条件（年齢・性別・地域・相手の年齢・目的・予算・重視条件）と上位3アプリのスコア内訳を、当サイトのサーバー経由で
+            Google（Gemini API）へ送信します。氏名や連絡先は送信しません。
+          </p>
+        )}
         <p className="mt-2 text-xs text-slate-400">この端末に記録された外部リンクのクリック数：{clicks.length}件（端末内のみ）</p>
         <button
           type="button"
