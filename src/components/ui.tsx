@@ -52,6 +52,24 @@ export function PurposeChip({ purpose, primary }: { purpose: Purpose; primary?: 
   )
 }
 
+/** 利用目的のチップ一覧（未確認ならデータ未取得） */
+export function PurposeChips({ purposes, className = '' }: { purposes: Purpose[]; className?: string }) {
+  if (purposes.length === 0) {
+    return (
+      <span className={`inline-flex items-center rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-400 ${className}`}>
+        目的：データ未取得
+      </span>
+    )
+  }
+  return (
+    <div className={`flex flex-wrap gap-1 ${className}`}>
+      {purposes.map((p, i) => (
+        <PurposeChip key={p} purpose={p} primary={i === 0} />
+      ))}
+    </div>
+  )
+}
+
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <section className={`rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 ${className}`}>{children}</section>
 }

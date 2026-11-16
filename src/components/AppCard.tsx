@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext'
 import { formatCount, formatPercent, formatYen } from '../lib/format'
 import { findActiveCampaign } from '../lib/outbound'
 import { MetricValue } from './MetricValue'
-import { AppLogo, DemoBadge, PrBadge, PurposeChip } from './ui'
+import { AppLogo, DemoBadge, PrBadge, PurposeChips } from './ui'
 
 export function CompareToggle({ app, compact }: { app: MatchingApp; compact?: boolean }) {
   const { has, toggle } = useCompare()
@@ -45,11 +45,7 @@ export function AppCard({ app, campaigns }: { app: MatchingApp; campaigns: Campa
               {promoted && <PrBadge />}
             </div>
             <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{app.tagline}</p>
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {app.purposes.map((p, i) => (
-                <PurposeChip key={p} purpose={p} primary={i === 0} />
-              ))}
-            </div>
+            <PurposeChips purposes={app.purposes} className="mt-1.5" />
           </div>
         </div>
         <dl className="mt-3 grid grid-cols-3 gap-2 text-center">

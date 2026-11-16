@@ -7,7 +7,9 @@
  */
 import type { Campaign, MatchingApp } from '../types/domain'
 import { DEMO_APPS } from './apps.demo'
+import { VERIFIED_APPS } from './apps.verified'
 import { DEMO_CAMPAIGNS } from './campaigns.demo'
+import { PRODUCTION_CAMPAIGNS } from './campaigns.production'
 
 export interface AppRepository {
   listApps(): Promise<MatchingApp[]>
@@ -42,4 +44,15 @@ export class StaticAppRepository implements AppRepository {
   }
 }
 
-export const appRepository: AppRepository = new StaticAppRepository(DEMO_APPS, DEMO_CAMPAIGNS, 350)
+/**
+ * データソースの切り替え（ビルド時の環境変数）
+ *   VITE_DATA_SOURCE=demo     … 架空のデモデータ（既定）
+ *   VITE_DATA_SOURCE=verified … 本番用データ（src/data/apps.verified.ts）
+ */
+export type DataSource = 'demo' | 'verified'
+export const DATA_SOURCE: DataSource = import.meta.env.VITE_DATA_SOURCE === 'verified' ? 'verified' : 'demo'
+
+export const appRepository: AppRepository =
+  DATA_SOURCE === 'verified'
+    ? new StaticAppRepository(VERIFIED_APPS, PRODUCTION_CAMPAIGNS)
+    : new StaticAppRepository(DEMO_APPS, DEMO_CAMPAIGNS, 350)

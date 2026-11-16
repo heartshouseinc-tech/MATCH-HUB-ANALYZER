@@ -1,9 +1,11 @@
 import { Link, useParams } from 'react-router-dom'
 import { CompareToggle } from '../components/AppCard'
 import { AgeDistributionChart, GenderRatioBar, RegionHeat } from '../components/charts'
-import { MetricValue } from '../components/MetricValue'
 import { OutboundButton } from '../components/OutboundButton'
-import { AppLogo, Card, DemoBadge, EmptyState, LoadingList, PrBadge, PurposeChip, SectionTitle } from '../components/ui'
+import { AppLogo, Card, DemoBadge, EmptyState, LoadingList, PrBadge, PurposeChips, SectionTitle } from '../components/ui'
+import { MetricValue, NoData, SourceDetails } from '../components/MetricValue'
+import { isSafetyVerified } from '../data/metric'
+import { completeness } from '../data/validate'
 import { AGE_BANDS, AGE_BAND_LABELS, ALL_REGIONS, ALL_SAFETY_FEATURES, REGION_LABELS, SAFETY_LABELS } from '../data/labels'
 import { useAppData } from '../hooks/useAppData'
 import { formatCount, formatPercent, formatYen } from '../lib/format'
@@ -20,6 +22,25 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 
 const pct = (v: number) => formatPercent(v)
+
+function CompletenessMeter({ app }: { app: Parameters<typeof completeness>[0] }) {
+  const c = completeness(app)
+  const total = c.filled.length + c.missing.length
+  return (
+    <div className="mt-3 rounded-xl bg-slate-50 p-3">
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-bold text-slate-600">掲載情報の確認状況</span>
+        <span className="tabular-nums text-slate-500">
+          {c.filled.length} / {total} 項目
+        </span>
+      </div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-200">
+        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${(c.filled.length / total) * 100}%` }} />
+      </div>
+      <p className="mt-1.5 text-[11px] text-slate-400">公式情報などで確認できた項目のみ掲載しています。</p>
+    </div>
+  )
+}
 
 export function AppDetailPage() {
   const { id } = useParams()
@@ -50,14 +71,11 @@ export function AppDetailPage() {
               {promoted && <PrBadge />}
             </div>
             <p className="mt-0.5 text-sm text-slate-600">{app.tagline}</p>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {app.purposes.map((p, i) => (
-                <PurposeChip key={p} purpose={p} primary={i === 0} />
-              ))}
-            </div>
+            <PurposeChips purposes={app.purposes} className="mt-2" />
           </div>
         </div>
-        <p className="mt-3 text-sm leading-relaxed text-slate-600">{app.description}</p>
+        {app.description && <p className="mt-3 text-sm leading-relaxed text-slate-600">{app.description}</p>}
+        {!app.isDemo && <CompletenessMeter app={app} />}
         <div className="mt-3 flex flex-wrap gap-1.5">
           {app.tags.map((t) => (
             <span key={t} className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500">
@@ -134,6 +152,12 @@ export function AppDetailPage() {
 
       <Card>
         <SectionTitle>安全対策・本人確認</SectionTitle>
+        {!isSafetyVerified(app) ? (
+          <p className="text-sm">
+            <NoData />
+            <span className="ml-2 text-xs text-slate-400">公式情報を確認中です</span>
+          </p>
+        ) : (
         <ul className="space-y-2">
           {ALL_SAFETY_FEATURES.map((f) => {
             const ok = app.safetyFeatures.includes(f)
@@ -151,7 +175,13 @@ export function AppDetailPage() {
             )
           })}
         </ul>
-        <p className="mt-3 text-[11px] text-slate-400">「−」は対応なし、または未確認を示します。</p>
+        )}
+        {isSafetyVerified(app) && <p className="mt-3 text-[11px] text-slate-400">「−」は公式情報で確認できなかった項目です。</p>}
+        {app.safetySource && !app.safetySource.isDemo && (
+          <div className="mt-3 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
+            <SourceDetails source={app.safetySource} />
+          </div>
+        )}
       </Card>
 
       {app.lastVerifiedAt && <p className="text-center text-[11px] text-slate-400">情報確認日：{app.lastVerifiedAt}</p>}

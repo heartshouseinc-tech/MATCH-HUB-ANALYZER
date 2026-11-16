@@ -4,10 +4,10 @@ import { PageTitle } from '../components/Layout'
 import { NoData, MetricValue } from '../components/MetricValue'
 import { OutboundButton } from '../components/OutboundButton'
 import { StrengthDots } from '../components/charts'
-import { AppLogo, DemoBadge, EmptyState, LoadingList, PurposeChip } from '../components/ui'
+import { AppLogo, DemoBadge, EmptyState, LoadingList, PurposeChips } from '../components/ui'
 import { MAX_COMPARE, useCompare } from '../context/CompareContext'
 import { AGE_BANDS, AGE_BAND_LABELS, ALL_REGIONS, REGION_LABELS, SAFETY_LABELS } from '../data/labels'
-import { hasValue } from '../data/metric'
+import { hasValue, isSafetyVerified } from '../data/metric'
 import { useAppData } from '../hooks/useAppData'
 import { formatCount, formatPercent, formatYen } from '../lib/format'
 import type { MatchingApp } from '../types/domain'
@@ -37,19 +37,17 @@ interface Group {
   rows: RowDef[]
 }
 
+/** 安全対策の行（未確認ならデータ未取得） */
+const safetyCell = (a: MatchingApp, f: MatchingApp['safetyFeatures'][number]) =>
+  !isSafetyVerified(a) ? <NoData /> : a.safetyFeatures.includes(f) ? '✓' : <span className="text-slate-300">−</span>
+
 const GROUPS: Group[] = [
   {
     title: '基本情報',
     rows: [
       {
         label: '主な利用目的',
-        render: (a) => (
-          <div className="flex flex-wrap justify-center gap-1">
-            {a.purposes.map((p, i) => (
-              <PurposeChip key={p} purpose={p} primary={i === 0} />
-            ))}
-          </div>
-        ),
+        render: (a) => <PurposeChips purposes={a.purposes} className="justify-center" />,
       },
       {
         label: '利用者の多い年齢層',
@@ -106,19 +104,13 @@ const GROUPS: Group[] = [
   {
     title: '安全対策・本人確認',
     rows: [
+      { label: '本人確認（公的書類）', render: (a) => safetyCell(a, 'identityVerification') },
+      { label: '24時間監視', render: (a) => safetyCell(a, 'monitoring24h') },
+      { label: '独身証明', render: (a) => safetyCell(a, 'singleStatusCheck') },
       {
-        label: '本人確認（公的書類）',
-        render: (a) => (a.safetyFeatures.includes('identityVerification') ? '✓' : <span className="text-slate-300">−</span>),
+        label: '対策項目数',
+        render: (a) => (isSafetyVerified(a) ? `${a.safetyFeatures.length} / ${Object.keys(SAFETY_LABELS).length}` : <NoData />),
       },
-      {
-        label: '24時間監視',
-        render: (a) => (a.safetyFeatures.includes('monitoring24h') ? '✓' : <span className="text-slate-300">−</span>),
-      },
-      {
-        label: '独身証明',
-        render: (a) => (a.safetyFeatures.includes('singleStatusCheck') ? '✓' : <span className="text-slate-300">−</span>),
-      },
-      { label: '対策項目数', render: (a) => `${a.safetyFeatures.length} / ${Object.keys(SAFETY_LABELS).length}` },
     ],
   },
 ]

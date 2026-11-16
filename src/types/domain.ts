@@ -50,6 +50,8 @@ export interface SourceInfo {
   sampleSize?: number
   /** 集計方法 */
   method?: string
+  /** 情報を確認した日（YYYY-MM-DD）。公式サイト等を見た日 */
+  checkedAt?: string
   /** デモ用の架空データかどうか */
   isDemo: boolean
 }
@@ -110,8 +112,10 @@ export interface MatchingApp {
   /** キャッチコピー */
   tagline: string
   description: string
-  /** 利用目的（先頭がメイン目的） */
+  /** 利用目的（先頭がメイン目的）。空配列は「未確認」 */
   purposes: Purpose[]
+  /** 利用目的の出典（公式サイトの表記など） */
+  purposesSource?: SourceInfo
   /** 年齢帯ごとの利用者構成比（合計 1） */
   ageDistribution: Metric<Record<AgeBand, number>>
   /** 男女比（男性の割合 0-1） */
@@ -120,6 +124,13 @@ export interface MatchingApp {
   /** 地域別の利用傾向（1〜5 の相対指標） */
   regionStrength: Metric<Record<Region, number>>
   safetyFeatures: SafetyFeature[]
+  /**
+   * 安全対策を確認済みか。false の場合、safetyFeatures は「未確認」として扱い
+   * 画面では「データ未取得」、診断では中立評価にする（省略時は true）
+   */
+  safetyVerified?: boolean
+  /** 安全対策の出典 */
+  safetySource?: SourceInfo
   performance: PerformanceMetrics
   outbound: OutboundConfig
   tags: string[]

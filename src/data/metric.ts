@@ -25,3 +25,34 @@ export function sourced<T>(value: T, source: SourceInfo): Metric<T> {
 export function hasValue<T>(m: Metric<T> | undefined): m is Metric<T> & { value: T } {
   return !!m && m.value !== null && m.value !== undefined
 }
+
+/**
+ * 公式サイトで確認した値を作る
+ * 例: official(<金額>, { url: '<料金ページURL>', checkedAt: 'YYYY-MM-DD', note: 'Web版・クレジットカード・1ヶ月プラン' })
+ */
+export function official<T>(value: T, opts: OfficialOpts): Metric<T> {
+  return { value, source: officialSource(opts) }
+}
+
+interface OfficialOpts {
+  url: string
+  checkedAt: string
+  note?: string
+  name?: string
+}
+
+/** 公式サイトの出典情報だけを作る（purposesSource / safetySource 用） */
+export function officialSource(opts: OfficialOpts): SourceInfo {
+  return {
+    name: opts.name ?? '公式サイト',
+    url: opts.url,
+    checkedAt: opts.checkedAt,
+    method: opts.note ?? '公式サイトの掲載内容を確認',
+    isDemo: false,
+  }
+}
+
+/** 安全対策が確認済みかどうか */
+export function isSafetyVerified(app: { safetyVerified?: boolean }) {
+  return app.safetyVerified !== false
+}

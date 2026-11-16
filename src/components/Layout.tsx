@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useCompare } from '../context/CompareContext'
 import { CompareTray } from './CompareTray'
+import { DATA_SOURCE } from '../data/repository'
 
 function Icon({ d }: { d: string }) {
   return (
@@ -19,6 +20,13 @@ const NAV = [
 ]
 
 export function DemoBanner() {
+  if (DATA_SOURCE === 'verified') {
+    return (
+      <div className="flex h-7 items-center justify-center truncate border-b border-sky-100 bg-sky-50 px-4 text-[11px] text-sky-800">
+        <span className="truncate">公式情報などで確認できた項目のみ掲載しています</span>
+      </div>
+    )
+  }
   return (
     <div className="flex h-7 items-center justify-center truncate border-b border-amber-200 bg-amber-50 px-4 text-[11px] text-amber-800">
       <span className="truncate">

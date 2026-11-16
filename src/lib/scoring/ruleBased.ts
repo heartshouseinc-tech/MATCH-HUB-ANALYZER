@@ -12,7 +12,7 @@
  */
 import type { AgeBand, MatchingApp, SafetyFeature } from '../../types/domain'
 import { AGE_BANDS, AGE_BAND_RANGES, PURPOSE_LABELS, REGION_LABELS, SAFETY_LABELS, ageToBand } from '../../data/labels'
-import { hasValue } from '../../data/metric'
+import { hasValue, isSafetyVerified } from '../../data/metric'
 import { formatCount, formatPercent, formatYen } from '../format'
 import type { CriterionKey, CriterionResult, DiagnosisInput, Recommendation, ScoringEngine } from './types'
 
@@ -104,9 +104,10 @@ const missing = (label: string): Partial => ({
 })
 
 function evalPurpose(app: MatchingApp, input: DiagnosisInput): Partial {
+  if (app.purposes.length === 0) return missing('利用目的')
   const target = PURPOSE_LABELS[input.purpose]
   const idx = app.purposes.indexOf(input.purpose)
-  const base = { dataAvailable: true, isDemoData: app.isDemo }
+  const base = { dataAvailable: true, isDemoData: app.isDemo || !!app.purposesSource?.isDemo }
   if (idx === 0) return { ...base, ratio: 1, reason: `メインの利用目的が「${target}」で一致` }
   if (idx > 0) return { ...base, ratio: 0.6, reason: `「${target}」にも対応（メインは「${PURPOSE_LABELS[app.purposes[0]]}」）` }
   return { ...base, ratio: 0.1, reason: `主な目的は「${app.purposes.map((p) => PURPOSE_LABELS[p]).join('・')}」で、「${target}」向けではありません` }
@@ -170,6 +171,7 @@ function evalBudget(app: MatchingApp, input: DiagnosisInput): Partial {
 }
 
 function evalSafety(app: MatchingApp): Partial {
+  if (!isSafetyVerified(app)) return missing('安全対策')
   const score = app.safetyFeatures.reduce((s, f) => s + SAFETY_WEIGHTS[f], 0)
   const hasId = app.safetyFeatures.includes('identityVerification')
   const reason = hasId

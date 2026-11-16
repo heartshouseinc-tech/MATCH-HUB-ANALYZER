@@ -43,6 +43,7 @@ npm run build      # 型チェック + 本番ビルド（dist/ に出力）
 npm run preview    # ビルド結果をローカルで確認
 npm test           # ユニットテスト
 npm run typecheck  # 型チェックのみ
+npm run data:check # 本番データの検証
 ```
 
 ## Cloudflare Pages への公開
@@ -52,7 +53,7 @@ npm run typecheck  # 型チェックのみ
 | Framework preset | Vite（または None） |
 | Build command | `npm run build` |
 | Build output directory | `dist` |
-| 環境変数 | `NODE_VERSION=22` |
+| 環境変数 | `NODE_VERSION=22`、本番データで公開するなら `VITE_DATA_SOURCE=verified` |
 
 SPA のルーティング用に `public/_redirects`（`/* /index.html 200`）を同梱しています。Netlify でもそのまま動作します。
 
@@ -103,12 +104,16 @@ interface Metric<T> {
 - 実測値・公表値は `sourced(value, { name, url, periodStart, periodEnd, sampleSize, method, isDemo: false })` で出典を必ず紐づけます。
 - 診断ではデータ未取得の軸を「中立（50%）」として扱い、その旨を注意点に表示します。
 
-### 実在アプリへの差し替え手順
+### 本番データ（実在アプリ）の入力
 
-1. `src/data/apps.verified.ts` を作成し、`MatchingApp[]` 型でデータを記述（`isDemo: false`）
-2. 公式 URL を確認したら `outbound.officialUrl` を設定し、`officialUrlVerified: true` に
-3. `src/data/repository.ts` の `appRepository` に渡す配列を差し替え
-4. 全アプリが実データになったら `Layout.tsx` の `DemoBanner` を外す
+`src/data/apps.verified.ts` に 7 アプリ（Pairs・タップル・Omiai・with・ゼクシィ縁結び・ブライダルネット・マリッシュ）の入力枠を用意しています。現在はすべて未確認（データ未取得・リンク無効）です。
+
+```bash
+npm run data:check                   # 入力状況とエラーを表示（エラーがあると終了コード 1）
+VITE_DATA_SOURCE=verified npm run dev # 本番データで画面を確認
+```
+
+入力手順・チェックリスト・書き方の例は **[docs/DATA_ENTRY.md](docs/DATA_ENTRY.md)** を参照。公開時は Cloudflare Pages に `VITE_DATA_SOURCE=verified` を設定します。
 
 JSON ファイルや CMS / API から読み込む場合は、`AppRepository` を実装したクラスを作って差し替えるだけで UI 側の変更は不要です。
 

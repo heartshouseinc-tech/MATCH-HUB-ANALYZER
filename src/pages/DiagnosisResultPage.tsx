@@ -9,6 +9,7 @@ import { AppLogo, Card, DemoBadge, EmptyState, ErrorState, PrBadge, SectionTitle
 import { useCompare } from '../context/CompareContext'
 import { PURPOSE_LABELS, REGION_LABELS } from '../data/labels'
 import { useAppData } from '../hooks/useAppData'
+import { DATA_SOURCE } from '../data/repository'
 import { loadDiagnosis } from '../lib/diagnosisStore'
 import type { AiExplainResponse } from '../lib/ai/explainer'
 import { budgetLabel } from '../lib/ai/explainer'
@@ -244,7 +245,8 @@ export function DiagnosisResultPage() {
         <ul className="mt-3 space-y-1 text-[11px] leading-relaxed text-slate-500">
           <li>・「重視する条件」に選んだ軸は配点を{PRIORITY_MULTIPLIER}倍にし、合計が100点になるよう再配分します。</li>
           <li>・データ未取得の軸は達成度50%（中立）として扱い、注意点に明記します。</li>
-          <li>・現在の算出結果は架空のデモデータに基づくもので、実在サービスの評価ではありません。</li>
+          {DATA_SOURCE === 'demo' && <li>・現在の算出結果は架空のデモデータに基づくもので、実在サービスの評価ではありません。</li>}
+          <li>・診断結果は判断材料のひとつです。最新の料金・条件は各公式サイトでご確認ください。</li>
         </ul>
       </Card>
     </div>
